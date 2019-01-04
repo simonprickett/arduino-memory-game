@@ -1,4 +1,5 @@
 #include <Bounce2.h>
+#include <Tone.h>
 
 #define RED_LED 0
 #define GREEN_LED 1
@@ -16,12 +17,16 @@ Bounce debouncerGreen = Bounce();
 Bounce debouncerBlue = Bounce();
 Bounce debouncerYellow = Bounce();
 
-bool redOn = false;
-bool greenOn = false;
-bool blueOn = false;
-bool yellowOn = false;
+Tone buzzer;
 
 unsigned short gameSequence[MAX_GAME_SEQUENCE];
+
+bool gameInProgress = false;
+bool attractLEDOn = false;
+unsigned short currentDelay;
+unsigned short currentSequenceLength;
+unsigned short n;
+unsigned long count = 0;
 
 void setup() {
   pinMode(RED_LED, OUTPUT);
@@ -38,47 +43,52 @@ void setup() {
   debouncerYellow.attach(YELLOW_BUTTON, INPUT_PULLUP);
   debouncerYellow.interval(30);
 
-  randomSeed(analogRead(0));
-
-  for (int n = 0; n < MAX_GAME_SEQUENCE; n++) {
-    gameSequence[n] = random(RED_BUTTON, YELLOW_BUTTON + 1);
-  }
+  buzzer.begin(BUZZER_PIN);
 }
 
-void loop() {
-  unsigned short currentDelay = 500;
-  
-  for (int n = 0; n < MAX_GAME_SEQUENCE; n++) {
-    // TODO turn on the right LED...
-    digitalWrite(gameSequence[n] - 4, HIGH);
-    delay(currentDelay);
-    // TODO turn off the right LED...
-    digitalWrite(gameSequence[n] - 4, LOW);
-    delay(currentDelay);
-  }
-  
-  debouncerRed.update();
-  debouncerGreen.update();
-  debouncerBlue.update();
-  debouncerYellow.update();
-  
-  if (debouncerRed.fell()) {
-    redOn = !redOn;
-    digitalWrite(RED_LED, redOn ? HIGH : LOW);
-  }
+void loop() {  
+  if (! gameInProgress) {
+    // Waiting for someone to press the green button...
+    debouncerGreen.update();
 
-  if (debouncerGreen.fell()) {
-    greenOn = !greenOn;
-    digitalWrite(GREEN_LED, greenOn ? HIGH : LOW);
-  }
+    if (debouncerGreen.fell()) {
+      digitalWrite(GREEN_LED, LOW);
+      
+      // Create a new game sequence.
+      randomSeed(analogRead(0));
 
-  if (debouncerBlue.fell()) {
-    blueOn = !blueOn;
-    digitalWrite(BLUE_LED, blueOn ? HIGH : LOW);
-  }
+      for (n = 0; n < MAX_GAME_SEQUENCE; n++) {
+        gameSequence[n] = random(RED_BUTTON, YELLOW_BUTTON + 1);
+      }
 
-  if (debouncerYellow.fell()) {
-    yellowOn = !yellowOn;
-    digitalWrite(YELLOW_LED, yellowOn ? HIGH : LOW);
+      currentSequenceLength = 1;
+      currentDelay = 500;
+
+      gameInProgress = true;
+      count = 0;
+
+      buzzer.play(NOTE_A4, 200);
+      delay(200);
+      buzzer.play(NOTE_C1, 400);
+    } else {
+      // Attract mode - flash the green LED.
+      if (count == 50000) {
+        attractLEDOn = ! attractLEDOn;
+        digitalWrite(GREEN_LED, attractLEDOn ? HIGH : LOW);    
+        count = 0;    
+      } 
+      
+      count++;
+    }
+  } else {
+    // Game is in progress...
+    for (n = 0; n < MAX_GAME_SEQUENCE; n++) {
+      // TODO turn on the right LED...
+      digitalWrite(gameSequence[n] - 4, HIGH);
+      delay(currentDelay);
+      // TODO turn off the right LED...
+      digitalWrite(gameSequence[n] - 4, LOW);
+      delay(currentDelay);
+    }
   }
 }
