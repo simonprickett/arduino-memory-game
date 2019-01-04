@@ -8,6 +8,8 @@
 #define GREEN_BUTTON 5
 #define BLUE_BUTTON 6
 #define YELLOW_BUTTON 7
+#define BUZZER_PIN 8
+#define MAX_GAME_SEQUENCE 800
 
 Bounce debouncerRed = Bounce();
 Bounce debouncerGreen = Bounce();
@@ -18,6 +20,8 @@ bool redOn = false;
 bool greenOn = false;
 bool blueOn = false;
 bool yellowOn = false;
+
+unsigned short gameSequence[MAX_GAME_SEQUENCE];
 
 void setup() {
   pinMode(RED_LED, OUTPUT);
@@ -33,9 +37,26 @@ void setup() {
   debouncerBlue.interval(30);
   debouncerYellow.attach(YELLOW_BUTTON, INPUT_PULLUP);
   debouncerYellow.interval(30);
+
+  randomSeed(analogRead(0));
+
+  for (int n = 0; n < MAX_GAME_SEQUENCE; n++) {
+    gameSequence[n] = random(RED_BUTTON, YELLOW_BUTTON + 1);
+  }
 }
 
 void loop() {
+  unsigned short currentDelay = 500;
+  
+  for (int n = 0; n < MAX_GAME_SEQUENCE; n++) {
+    // TODO turn on the right LED...
+    digitalWrite(gameSequence[n] - 4, HIGH);
+    delay(currentDelay);
+    // TODO turn off the right LED...
+    digitalWrite(gameSequence[n] - 4, LOW);
+    delay(currentDelay);
+  }
+  
   debouncerRed.update();
   debouncerGreen.update();
   debouncerBlue.update();
@@ -55,7 +76,6 @@ void loop() {
     blueOn = !blueOn;
     digitalWrite(BLUE_LED, blueOn ? HIGH : LOW);
   }
-
 
   if (debouncerYellow.fell()) {
     yellowOn = !yellowOn;
