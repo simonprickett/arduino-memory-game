@@ -23,7 +23,7 @@ unsigned short gameSequence[MAX_GAME_SEQUENCE];
 
 bool gameInProgress = false;
 bool attractLEDOn = false;
-bool showingSequenceToUser = true;
+bool showingSequenceToUser;
 unsigned short currentDelay;
 unsigned short currentSequenceLength;
 unsigned short userPositionInSequence;
@@ -68,6 +68,7 @@ void loop() {
 
       gameInProgress = true;
       count = 0;
+      showingSequenceToUser = true;
 
       //buzzer.play(NOTE_A4, 200);
       delay(200);
