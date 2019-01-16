@@ -23,8 +23,10 @@ unsigned short gameSequence[MAX_GAME_SEQUENCE];
 
 bool gameInProgress = false;
 bool attractLEDOn = false;
+bool showingSequenceToUser = true;
 unsigned short currentDelay;
 unsigned short currentSequenceLength;
+unsigned short userPositionInSequence;
 unsigned short n;
 unsigned long count = 0;
 
@@ -67,9 +69,12 @@ void loop() {
       gameInProgress = true;
       count = 0;
 
-      buzzer.play(NOTE_A4, 200);
+      //buzzer.play(NOTE_A4, 200);
       delay(200);
-      buzzer.play(NOTE_C1, 400);
+      //buzzer.play(NOTE_C1, 400);
+
+      // Little delay before the game starts.
+      delay(1000);
     } else {
       // Attract mode - flash the green LED.
       if (count == 50000) {
@@ -82,13 +87,73 @@ void loop() {
     }
   } else {
     // Game is in progress...
-    for (n = 0; n < MAX_GAME_SEQUENCE; n++) {
-      // TODO turn on the right LED...
-      digitalWrite(gameSequence[n] - 4, HIGH);
-      delay(currentDelay);
-      // TODO turn off the right LED...
-      digitalWrite(gameSequence[n] - 4, LOW);
-      delay(currentDelay);
+    if (showingSequenceToUser) {
+      // Play the pattern out to the user
+      for (n = 0; n < currentSequenceLength; n++) {
+        digitalWrite(gameSequence[n] - 4, HIGH);
+        //buzzer.play(NOTE_CS3, 200);
+        delay(currentDelay);
+        digitalWrite(gameSequence[n] - 4, LOW);
+        delay(currentDelay);
+      }
+
+      showingSequenceToUser = false;
+      userPositionInSequence = 0;
+    } else {
+      // Waiting for the user to repeat the sequence back
+      debouncerGreen.update();
+      debouncerRed.update();
+      debouncerBlue.update();
+      debouncerYellow.update();
+
+      unsigned short userPressed = 0;
+
+      if (debouncerGreen.fell()) {
+        digitalWrite(GREEN_LED, HIGH);
+        delay(currentDelay);
+        digitalWrite(GREEN_LED, LOW);
+        userPressed = GREEN_BUTTON;
+      } else if (debouncerRed.fell()) {
+        digitalWrite(RED_LED, HIGH);
+        delay(currentDelay);
+        digitalWrite(RED_LED, LOW);
+        userPressed = RED_BUTTON;
+      } else if (debouncerBlue.fell()) {
+        digitalWrite(BLUE_LED, HIGH);
+        delay(currentDelay);
+        digitalWrite(BLUE_LED, LOW);
+        userPressed = BLUE_BUTTON;
+      } else if (debouncerYellow.fell()) {
+        digitalWrite(YELLOW_LED, HIGH);
+        delay(currentDelay);
+        digitalWrite(YELLOW_LED, LOW);
+        userPressed = YELLOW_BUTTON;
+      }
+
+      if (userPressed > 0) {
+        // A button was pressed, check it against current sequence...
+        if (userPressed != gameSequence[userPositionInSequence]) {
+          // Failed...
+          buzzer.play(NOTE_F3, 300);
+          delay(300);
+          buzzer.play(NOTE_G3, 500);
+          delay(2500);
+          gameInProgress = false;
+        } else {
+          userPositionInSequence++;
+          if (userPositionInSequence == currentSequenceLength) {
+            // User has successfully repeated back the sequence so make it one longer...
+            // TODO guard against running off end of sequence array...
+            currentSequenceLength++;
+
+            // Play a tone...
+            buzzer.play(NOTE_A3, 300);
+            delay(2000);
+
+            showingSequenceToUser = true;
+          }
+        }
+      }
     }
   }
 }
