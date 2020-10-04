@@ -70,10 +70,6 @@ void loop() {
       count = 0;
       showingSequenceToUser = true;
 
-      //buzzer.play(NOTE_A4, 200);
-      delay(200);
-      //buzzer.play(NOTE_C1, 400);
-
       // Little delay before the game starts.
       delay(1000);
     } else {
@@ -92,7 +88,6 @@ void loop() {
       // Play the pattern out to the user
       for (n = 0; n < currentSequenceLength; n++) {
         digitalWrite(gameSequence[n] - 4, HIGH);
-        //buzzer.play(NOTE_CS3, 200);
         delay(currentDelay);
         digitalWrite(gameSequence[n] - 4, LOW);
         delay(currentDelay);
@@ -144,8 +139,12 @@ void loop() {
           userPositionInSequence++;
           if (userPositionInSequence == currentSequenceLength) {
             // User has successfully repeated back the sequence so make it one longer...
-            // TODO guard against running off end of sequence array...
             currentSequenceLength++;
+
+            // There's no win scenario here, so just reset...
+            if (currentSequenceLength >= MAX_GAME_SEQUENCE) {
+              gameInProgress = false;
+            }
 
             // Play a tone...
             buzzer.play(NOTE_A3, 300);
