@@ -30,6 +30,30 @@ unsigned short userPositionInSequence;
 unsigned short n;
 unsigned long count = 0;
 
+
+// Create a new game sequence.
+// Prevent generating sequence elements repeating more than twice in a row.
+void generate_sequence(unsigned short *sequence, unsigned long max_game_sequence){
+  randomSeed(analogRead(0));
+  unsigned short second_prev;
+  unsigned short prev;
+
+  sequence[0] = random(0, 3);
+  second_prev = sequence[0];
+  sequence[1] = random(0, 3);
+  prev = sequence[1];
+
+  for (int i = 2; i < max_game_sequence; i++) {
+    sequence[i] = random(0, 3);
+    if(sequence[i] == second_prev || sequence[i] == prev){
+      // prevent 3 matching colors in a row (2 in row is ok)
+      sequence[i] = (sequence[i]+1)%4;
+    }
+    second_prev = prev;
+    prev = sequence[i];
+  }
+}
+
 void setup() {
   pinMode(RED_LED, OUTPUT);
   pinMode(GREEN_LED, OUTPUT);
@@ -56,12 +80,7 @@ void loop() {
     if (debouncerGreen.fell()) {
       digitalWrite(GREEN_LED, LOW);
       
-      // Create a new game sequence.
-      randomSeed(analogRead(0));
-
-      for (n = 0; n < MAX_GAME_SEQUENCE; n++) {
-        gameSequence[n] = random(RED_BUTTON, YELLOW_BUTTON + 1);
-      }
+      generate_sequence(gameSequence, MAX_GAME_SEQUENCE);
 
       currentSequenceLength = 1;
       currentDelay = 500;
