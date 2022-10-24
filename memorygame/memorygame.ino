@@ -12,6 +12,11 @@
 #define BUZZER_PIN 8
 #define MAX_GAME_SEQUENCE 800
 
+#define DELAY_INIT 500
+#define DELAY_MIN 200
+#define DELAY_DECREASE 75
+#define DIFFICULTY_INCREASE_N_LVL 5 // Every N levels - speed up the game: currentDelay -= DELAY_DECREASE
+
 Bounce debouncerRed = Bounce();
 Bounce debouncerGreen = Bounce();
 Bounce debouncerBlue = Bounce();
@@ -64,14 +69,14 @@ void loop() {
       }
 
       currentSequenceLength = 1;
-      currentDelay = 500;
+      currentDelay = DELAY_INIT;
 
       gameInProgress = true;
       count = 0;
       showingSequenceToUser = true;
 
       // Little delay before the game starts.
-      delay(1000);
+      delay(2*currentDelay);
     } else {
       // Attract mode - flash the green LED.
       if (count == 50000) {
@@ -133,13 +138,20 @@ void loop() {
           buzzer.play(NOTE_F3, 300);
           delay(300);
           buzzer.play(NOTE_G3, 500);
-          delay(2500);
+          delay(5*currentDelay);
           gameInProgress = false;
         } else {
           userPositionInSequence++;
           if (userPositionInSequence == currentSequenceLength) {
             // User has successfully repeated back the sequence so make it one longer...
             currentSequenceLength++;
+
+            // Increase game difficulty by speeding up / decreasing delays
+            // Do so every <DIFFICULTY_INCREASE_N_LVL> levels (by default every 5th level)
+            if(userPositionInSequence % DIFFICULTY_INCREASE_N_LVL == 0 && currentDelay > DELAY_MIN){
+              currentDelay -= DELAY_DECREASE;
+              if(currentDelay < DELAY_MIN) {currentDelay = DELAY_MIN; } // Don't go below minimum delay
+            }
 
             // There's no win scenario here, so just reset...
             if (currentSequenceLength >= MAX_GAME_SEQUENCE) {
@@ -148,7 +160,7 @@ void loop() {
 
             // Play a tone...
             buzzer.play(NOTE_A3, 300);
-            delay(2000);
+            delay(4*currentDelay);
 
             showingSequenceToUser = true;
           }
